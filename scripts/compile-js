@@ -1,0 +1,12 @@
+#!/bin/bash
+project='trollmegle'
+jsFiles=(
+  'application.js'
+  'controllers/*.js'
+  'models/*.js'
+  'ui/*.js'
+  'app/*.js'
+)
+for file in ${jsFiles[@]}; do jsFileList="${jsFileList}${file} "; done
+cat $jsFileList > "${project}.js"
+uglifyjs "${project}.js" > "${project}.min.js"
