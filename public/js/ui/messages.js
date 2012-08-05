@@ -3,7 +3,7 @@ tm.ui.Message = Backbone.View.extend({
   className: 'message',
 
   render: function() {
-    this.$el.text(this.model.cid)
+    this.$el.text(this.model.get('text'))
     return this
   }
 });
@@ -25,6 +25,13 @@ tm.ui.Messages = Backbone.View.extend({
   },
 
   addMessage: function(message) {
-    this.$el.append(new tm.uid.Message({ model: message }).render().$el)
+    var height = this.$el.outerHeight(),
+        scrollHeight = this.el.scrollHeight,
+        scrollTop = this.el.scrollTop,
+        heightDiff = scrollHeight - height,
+        scrollDiff = scrollTop - heightDiff
+        scrolled = scrollDiff === 0
+    this.$el.append(new tm.ui.Message({ model: message }).render().$el)
+    if (scrolled) this.el.scrollTop = this.el.scrollHeight
   }
 });

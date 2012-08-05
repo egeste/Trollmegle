@@ -4,18 +4,23 @@
 }
 
 ul#sessions {
-  padding-bottom:45px;
-
+  padding-bottom:55px;
+  overflow:auto;
 }
 
 li.session {
-  margin:5px;
+  margin:5px 0 0 5px;
   padding:2px;
   width:250px;
   height:200px;
-  position:relative;
-  display:inline-block;
+  float:left;
+  list-style:none;
   border:1px solid black;
+}
+
+li.session input {
+  width:247px;
+  height:20px;
 }
 
 li.session .header {
@@ -29,14 +34,15 @@ li.session .header .close {
 }
 
 li.session ul.messages {
-  height:150px;
+  padding:5px;
+  height:140px;
   overflow-y:auto;
-  background-color:#fff;
 }
 
-li.session input {
-  width:247px;
-  height:20px;
+li.session.create .services,
+li.session.create .button {
+  width:225px;
+  margin:10px;
 }
 
 form#chatInput {
@@ -52,6 +58,7 @@ form#chatInput {
 form#chatInput input {
   width:100%;
   height:25px;
+  padding:0 5px;
 }
 
 /* jQuery UI overrides here */

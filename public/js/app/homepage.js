@@ -10,7 +10,11 @@ $(function() {
 
     createSubViews: function() {
       tm.app.sessionsView = new tm.ui.Sessions
-      tm.app.chatInput = new tm.ui.ChatInput({ id: 'chatInput', className: 'ui-widget-header' })
+      tm.app.chatInput = new tm.ui.ChatInput({
+        id: 'chatInput',
+        className: 'ui-widget-header',
+        collection: tm.app.sessions
+      })
     },
 
     render: function() {

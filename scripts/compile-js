@@ -1,6 +1,12 @@
 #!/bin/bash
 project='trollmegle'
 jsFiles=(
+  '../../vendor/jquery/dist/jquery.js'
+  '../../vendor/jquery-ui/dist/jquery-ui.js'
+  '../../vendor/select2/select2.js'
+  '../../vendor/JosephMyers/md5.js'
+  '../../vendor/underscore/underscore.js'
+  '../../vendor/Backbone/backbone.js'
   'application.js'
   'controllers/*.js'
   'models/*.js'
@@ -9,4 +15,4 @@ jsFiles=(
 )
 for file in ${jsFiles[@]}; do jsFileList="${jsFileList}${file} "; done
 cat $jsFileList > "${project}.js"
-uglifyjs "${project}.js" > "${project}.min.js"
+#uglifyjs "${project}.js" > "${project}.min.js"

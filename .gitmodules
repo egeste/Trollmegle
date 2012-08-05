@@ -1,0 +1,15 @@
+[submodule "vendor/underscore"]
+	path = vendor/underscore
+	url = https://github.com/documentcloud/underscore.git
+[submodule "vendor/Backbone"]
+	path = vendor/Backbone
+	url = https://github.com/documentcloud/backbone.git
+[submodule "vendor/select2"]
+	path = vendor/select2
+	url = https://github.com/ivaynberg/select2.git
+[submodule "vendor/jquery"]
+	path = vendor/jquery
+	url = https://github.com/jquery/jquery.git
+[submodule "vendor/jquery-ui"]
+	path = vendor/jquery-ui
+	url = https://github.com/jquery/jquery-ui.git
