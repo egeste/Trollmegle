@@ -13,23 +13,23 @@ tm.ui.Messages = Backbone.View.extend({
   className: 'messages',
 
   initialize: function() {
-    this.collection.on('add', this.addMessage, this)
+    this.collection.on('add', this.add, this)
     this.collection.on('reset', this.render, this)
   },
 
   render: function() {
     this.collection.each(function(message) {
-      this.addMessage(message)
+      this.add(message)
     }, this)
     return this
   },
 
-  addMessage: function(message) {
+  add: function(message) {
     var height = this.$el.outerHeight(),
         scrollHeight = this.el.scrollHeight,
         scrollTop = this.el.scrollTop,
         heightDiff = scrollHeight - height,
-        scrollDiff = scrollTop - heightDiff
+        scrollDiff = scrollTop - heightDiff,
         scrolled = scrollDiff === 0
     this.$el.append(new tm.ui.Message({ model: message }).render().$el)
     if (scrolled) this.el.scrollTop = this.el.scrollHeight

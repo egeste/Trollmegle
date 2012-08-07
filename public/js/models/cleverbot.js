@@ -33,6 +33,7 @@ tm.models.services.CleverBot = Backbone.Model.extend({
   initialize: function(attributes, options) {
     this.session = options.session
     this.session.set('connected', true)
+    this.session.messages.on('add', this.send, this)
   },
 
   sync: function(method, model, options) {
@@ -69,9 +70,9 @@ tm.models.services.CleverBot = Backbone.Model.extend({
   start: function() { this.send() },
 
   send: function(message) {
-    message = message || this.PASS_MESSAGE
-    if (message !== this.PASS_MESSAGE) this.session.messages.add({ text: message })
-    this.set('stimulus', message).fetch()
+    if (message.get('sender') === this) return
+    var text = message.get('text') || this.PASS_MESSAGE
+    this.set('stimulus', text).fetch()
   },
 
   _checksum: function() {

@@ -41,11 +41,24 @@ tm.ui.Session = Backbone.View.extend({
   className: 'session ui-corner-all ui-widget-content',
 
   events: {
-    'click .close': 'destroy'
+    'click .close': 'destroy',
+    'click': 'highlight',
+    'focus .say': 'highlight',
+    'keydown .say': 'highlight',
+    'change .broadcast': 'broadcast'
   },
 
   initialize: function() {
     this.createSubViews()
+    this.model.messages.on('add', this.highlight, this)
+    $.ajax({
+      async: false,
+      context: this,
+      url: '/templates/session.html',
+      success: function(data) {
+        this.template = _(data).template(null, { variable: 'session' })
+      }
+    })
   },
 
   createSubViews: function() {
@@ -54,22 +67,39 @@ tm.ui.Session = Backbone.View.extend({
   },
 
   render: function() {
-    $header = $(this.make('div', { 'class': 'header ui-widget-header ui-corner-all' }, this.model.service.getName()))
-      .append($(this.make('div', { 'class': 'close'})).button({
-        text: false,
-        icons: { primary:'ui-icon-close' }
-      }))
-
     this.$el
-      .append($header)
+      .html(this.template())
       .append(this.chatMessages.render().$el)
       .append(this.chatInput.render().$el)
+
+    this.$('.close').button({
+      text: false,
+      icons: { primary:'ui-icon-close' }
+    })
+    this.$('.broadcast').button()
+
     return this
   },
 
   destroy: function() {
     this.model.collection.remove(this.model)
     this.remove()
+  },
+
+  highlight: function(e) {
+    var $header = this.$('.header')
+
+    if (e.target)
+      $header.removeClass('ui-state-highlight')
+
+    if (e instanceof Backbone.Model && e.has('sender') && e.get('sender') === this.model.service)
+      $header.addClass('ui-state-highlight')
+  },
+
+  broadcast: function(e) {
+    var $target = $(e.target),
+        value = $target.is(':checked')
+    this.model.set('broadcast', value)
   }
 });
 

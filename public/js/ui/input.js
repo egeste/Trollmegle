@@ -2,7 +2,7 @@ tm.ui.ChatInput = Backbone.View.extend({
   tagName: 'form',
 
   events: {
-    'keydown input': 'send'
+    'keydown .say': 'send'
   },
 
   initialize: function() {
@@ -11,20 +11,26 @@ tm.ui.ChatInput = Backbone.View.extend({
   },
 
   render: function() {
-    this.$el.append(this.make('input', { 'type': 'text', 'placeholder': 'Say something...' }))
+    this.$el.append(this.make('input', {
+      'type': 'text',
+      'class': 'say ui-corner-all',
+      'placeholder': 'Say something...'
+    }))
     return this
   },
 
   send: function(event) {
     if (event.keyCode === 13) {
       var $target = $(event.target),
-          message = $.trim($target.val())
-      message && (this.model || this.collection).send(message)
+          value = $.trim($target.val())
+      value && (this.model || this.collection).send(new tm.models.Message({ text: value }))
       $target.val('').focus()
     }
   },
 
   blocking: function() {
-    this.$('input').prop('disabled', this.model.isBlocking())
+    var blocking = this.model.get('blocking')
+    this.$('.say').prop('disabled', blocking)
+    this.$el.toggleClass('blocking', blocking)
   }
 });

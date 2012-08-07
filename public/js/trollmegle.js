@@ -28864,6 +28864,7 @@ tm.models.services.CleverBot = Backbone.Model.extend({
   initialize: function(attributes, options) {
     this.session = options.session
     this.session.set('connected', true)
+    this.session.messages.on('add', this.send, this)
   },
 
   sync: function(method, model, options) {
@@ -28900,9 +28901,9 @@ tm.models.services.CleverBot = Backbone.Model.extend({
   start: function() { this.send() },
 
   send: function(message) {
-    message = message || this.PASS_MESSAGE
-    if (message !== this.PASS_MESSAGE) this.session.messages.add({ text: message })
-    this.set('stimulus', message).fetch()
+    if (message.get('sender') === this) return
+    var text = message.get('text') || this.PASS_MESSAGE
+    this.set('stimulus', text).fetch()
   },
 
   _checksum: function() {
@@ -28932,6 +28933,7 @@ tm.models.Messages = Backbone.Collection.extend({
 });
 tm.models.Session = Backbone.Model.extend({
   defaults: {
+    broadcast: false,
     connected: false,
     blocking: false,
     typing: false
@@ -28939,18 +28941,21 @@ tm.models.Session = Backbone.Model.extend({
 
   initialize: function(attributes, options) {
     this.messages = new tm.models.Messages
+    this.messages.on('add', this.broadcast, this)
     this.service = new options.service(null, { session: this })
     if (options.start) this.service.start()
   },
 
   send: function(message) {
-    if (this.isBlocking()) return
-    this.service.send(message)
+    if (this.get('blocking')) return
+    this.messages.add(message)
   },
 
-  isConnected: function() { return this.get('connected') },
-  isBlocking: function() { return this.get('blocking') },
-  isTyping: function() { return this.get('typing') }
+  broadcast: function(message) {
+    if (this.get('broadcast') && message.get('sender') === this.service) {
+      this.collection.send(message)
+    }
+  }
 });
 
 tm.models.Sessions = Backbone.Collection.extend({
@@ -28978,7 +28983,7 @@ tm.ui.ChatInput = Backbone.View.extend({
   tagName: 'form',
 
   events: {
-    'keydown input': 'send'
+    'keydown .say': 'send'
   },
 
   initialize: function() {
@@ -28987,21 +28992,27 @@ tm.ui.ChatInput = Backbone.View.extend({
   },
 
   render: function() {
-    this.$el.append(this.make('input', { 'type': 'text', 'placeholder': 'Say something...' }))
+    this.$el.append(this.make('input', {
+      'type': 'text',
+      'class': 'say ui-corner-all',
+      'placeholder': 'Say something...'
+    }))
     return this
   },
 
   send: function(event) {
     if (event.keyCode === 13) {
       var $target = $(event.target),
-          message = $.trim($target.val())
-      message && (this.model || this.collection).send(message)
+          value = $.trim($target.val())
+      value && (this.model || this.collection).send(new tm.models.Message({ text: value }))
       $target.val('').focus()
     }
   },
 
   blocking: function() {
-    this.$('input').prop('disabled', this.model.isBlocking())
+    var blocking = this.model.get('blocking')
+    this.$('.say').prop('disabled', blocking)
+    this.$el.toggleClass('blocking', blocking)
   }
 });
 tm.ui.Message = Backbone.View.extend({
@@ -29019,25 +29030,24 @@ tm.ui.Messages = Backbone.View.extend({
   className: 'messages',
 
   initialize: function() {
-    this.collection.on('add', this.addMessage, this)
+    this.collection.on('add', this.add, this)
     this.collection.on('reset', this.render, this)
   },
 
   render: function() {
     this.collection.each(function(message) {
-      this.addMessage(message)
+      this.add(message)
     }, this)
     return this
   },
 
-  addMessage: function(message) {
+  add: function(message) {
     var height = this.$el.outerHeight(),
         scrollHeight = this.el.scrollHeight,
         scrollTop = this.el.scrollTop,
         heightDiff = scrollHeight - height,
-        scrollDiff = scrollTop - heightDiff
+        scrollDiff = scrollTop - heightDiff,
         scrolled = scrollDiff === 0
-    console.log(height, scrollHeight, scrollTop, heightDiff, scrollDiff, scrolled)
     this.$el.append(new tm.ui.Message({ model: message }).render().$el)
     if (scrolled) this.el.scrollTop = this.el.scrollHeight
   }
@@ -29085,11 +29095,24 @@ tm.ui.Session = Backbone.View.extend({
   className: 'session ui-corner-all ui-widget-content',
 
   events: {
-    'click .close': 'destroy'
+    'click .close': 'destroy',
+    'click': 'highlight',
+    'focus .say': 'highlight',
+    'keydown .say': 'highlight',
+    'change .broadcast': 'broadcast'
   },
 
   initialize: function() {
     this.createSubViews()
+    this.model.messages.on('add', this.highlight, this)
+    $.ajax({
+      async: false,
+      context: this,
+      url: '/templates/session.html',
+      success: function(data) {
+        this.template = _(data).template(null, { variable: 'session' })
+      }
+    })
   },
 
   createSubViews: function() {
@@ -29098,22 +29121,39 @@ tm.ui.Session = Backbone.View.extend({
   },
 
   render: function() {
-    $header = $(this.make('div', { 'class': 'header ui-widget-header ui-corner-all' }, this.model.service.getName()))
-      .append($(this.make('div', { 'class': 'close'})).button({
-        text: false,
-        icons: { primary:'ui-icon-close' }
-      }))
-
     this.$el
-      .append($header)
+      .html(this.template())
       .append(this.chatMessages.render().$el)
       .append(this.chatInput.render().$el)
+
+    this.$('.close').button({
+      text: false,
+      icons: { primary:'ui-icon-close' }
+    })
+    this.$('.broadcast').button()
+
     return this
   },
 
   destroy: function() {
     this.model.collection.remove(this.model)
     this.remove()
+  },
+
+  highlight: function(e) {
+    var $header = this.$('.header')
+
+    if (e.target)
+      $header.removeClass('ui-state-highlight')
+
+    if (e instanceof Backbone.Model && e.has('sender') && e.get('sender') === this.model.service)
+      $header.addClass('ui-state-highlight')
+  },
+
+  broadcast: function(e) {
+    var $target = $(e.target),
+        value = $target.is(':checked')
+    this.model.set('broadcast', value)
   }
 });
 
